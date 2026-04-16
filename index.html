@@ -1,0 +1,1889 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Universal Mod Menu</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+    :root {
+      --bg-a: #8d785f;
+      --bg-b: #665540;
+      --panel: #030303;
+      --panel-soft: #090909;
+      --line: #151515;
+      --line-2: #242424;
+      --text: #f3f3f3;
+      --muted: #b5b5b5;
+      --chip: #101010;
+      --button: #151515;
+      --button-hover: #1d1d1d;
+      --side-panel-bg: #101010;
+      --side-panel-text: #b5b5b5;
+      --footer-bg: #1b1b1b;
+      --footer-text: #f5f5f5;
+      --panel-blur: 0px;
+      --panel-hue: 0deg;
+      --guard-opacity: 0;
+      --rgb-accent: #ff4d4d;
+      --scanline-y: 0px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html, body {
+      min-height: 100%;
+      font-family: 'Inter', sans-serif;
+      color: var(--text);
+      background:
+        linear-gradient(rgba(40, 29, 17, 0.3), rgba(40, 29, 17, 0.3)),
+        linear-gradient(135deg, var(--bg-a) 0%, var(--bg-b) 100%);
+    }
+
+    body {
+      padding: 28px;
+      overflow-x: hidden;
+    }
+
+    body.vr-mode {
+      padding: 12px;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background:
+        linear-gradient(0deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+      background-size: 96px 96px;
+      opacity: 0.12;
+      pointer-events: none;
+    }
+
+    .stage {
+      width: min(1320px, 100%);
+      margin: 0 auto;
+      perspective: 1400px;
+      position: relative;
+    }
+
+    .menu {
+      position: relative;
+      border-radius: 18px;
+      background: var(--panel);
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
+      overflow: hidden;
+      transform: rotateX(2deg) rotateY(-3deg);
+      filter: blur(var(--panel-blur)) hue-rotate(var(--panel-hue));
+    }
+
+    body.vr-mode .menu {
+      transform: none;
+      border-radius: 24px;
+      box-shadow: 0 28px 80px rgba(0, 0, 0, 0.55);
+    }
+
+    .menu::after {
+      content: "";
+      position: absolute;
+      inset: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      border-radius: 12px;
+      opacity: var(--guard-opacity);
+      pointer-events: none;
+    }
+
+    .menu::before {
+      content: "";
+      position: absolute;
+      left: 14px;
+      right: 14px;
+      top: var(--scanline-y);
+      height: 1px;
+      background: rgba(255, 255, 255, 0.16);
+      box-shadow: 0 0 10px rgba(255, 255, 255, 0.08);
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .auth-overlay {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      background: rgba(0, 0, 0, 0.82);
+      z-index: 20;
+      opacity: 1;
+      visibility: visible;
+      transition: opacity 0.35s ease, visibility 0.35s ease;
+    }
+
+    .auth-overlay.hidden {
+      opacity: 0;
+      visibility: hidden;
+    }
+
+    .auth-card {
+      width: min(460px, 100%);
+      padding: 22px;
+      border: 1px solid var(--line-2);
+      border-radius: 14px;
+      background: #0b0b0b;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45);
+    }
+
+    .auth-title {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .auth-copy {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+      margin-bottom: 16px;
+    }
+
+    .auth-form {
+      display: grid;
+      gap: 12px;
+    }
+
+    .auth-input {
+      width: 100%;
+      border: 1px solid #2c2c2c;
+      border-radius: 8px;
+      background: #121212;
+      color: var(--text);
+      font-size: 14px;
+      padding: 12px 14px;
+    }
+
+    .auth-input:focus {
+      outline: 1px solid #4a4a4a;
+      border-color: #4a4a4a;
+    }
+
+    .auth-actions {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .auth-button {
+      border: 1px solid #343434;
+      border-radius: 8px;
+      background: #161616;
+      color: #f2f2f2;
+      padding: 10px 14px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .auth-button:hover,
+    .auth-button:focus-visible {
+      background: #202020;
+      outline: none;
+    }
+
+    .auth-status {
+      min-height: 18px;
+      color: #d0d0d0;
+      font-size: 12px;
+    }
+
+    .auth-status.error {
+      color: #ff8f8f;
+    }
+
+    .login-overlay {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      background: rgba(0, 0, 0, 0.86);
+      z-index: 19;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.3s ease, visibility 0.3s ease;
+    }
+
+    .login-overlay.visible {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .login-card {
+      width: min(460px, 100%);
+      padding: 22px;
+      border: 1px solid var(--line-2);
+      border-radius: 14px;
+      background: #0b0b0b;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45);
+    }
+
+    .login-title {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .login-copy {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+      margin-bottom: 16px;
+    }
+
+    .login-form {
+      display: grid;
+      gap: 12px;
+    }
+
+    .login-input {
+      width: 100%;
+      border: 1px solid #2c2c2c;
+      border-radius: 8px;
+      background: #121212;
+      color: var(--text);
+      font-size: 14px;
+      padding: 12px 14px;
+    }
+
+    .login-input:focus {
+      outline: 1px solid #4a4a4a;
+      border-color: #4a4a4a;
+    }
+
+    .login-actions {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .login-button {
+      border: 1px solid #343434;
+      border-radius: 8px;
+      background: #161616;
+      color: #f2f2f2;
+      padding: 10px 14px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .login-button:hover,
+    .login-button:focus-visible {
+      background: #202020;
+      outline: none;
+    }
+
+    .login-status {
+      min-height: 18px;
+      color: #d0d0d0;
+      font-size: 12px;
+    }
+
+    .login-status.error {
+      color: #ff8f8f;
+    }
+
+    .sequence-overlay {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      background: rgba(0, 0, 0, 0.88);
+      z-index: 17;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.35s ease, visibility 0.35s ease;
+    }
+
+    .sequence-overlay.visible {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .sequence-overlay.hidden {
+      opacity: 0;
+      visibility: hidden;
+    }
+
+    .sequence-card {
+      width: min(520px, 100%);
+      padding: 24px;
+      border: 1px solid var(--line-2);
+      border-radius: 16px;
+      background: #0b0b0b;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45);
+    }
+
+    .sequence-title {
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+
+    .sequence-steps {
+      display: grid;
+      gap: 10px;
+      margin-bottom: 18px;
+      color: var(--text);
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .sequence-step {
+      padding: 10px 12px;
+      border: 1px solid var(--line-2);
+      border-radius: 10px;
+      background: #111;
+    }
+
+    .sequence-status {
+      min-height: 20px;
+      margin-bottom: 16px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .sequence-button {
+      border: 1px solid #343434;
+      border-radius: 8px;
+      background: #161616;
+      color: #f2f2f2;
+      padding: 10px 14px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .sequence-button:hover,
+    .sequence-button:focus-visible {
+      background: #202020;
+      outline: none;
+    }
+
+    .credits-overlay {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      background: rgba(0, 0, 0, 0.84);
+      z-index: 18;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.25s ease, visibility 0.25s ease;
+    }
+
+    .credits-overlay.visible {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .credits-card {
+      width: min(440px, 100%);
+      padding: 22px;
+      border: 1px solid var(--line-2);
+      border-radius: 14px;
+      background: #0b0b0b;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45);
+    }
+
+    .credits-title {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 12px;
+    }
+
+    .credits-entry {
+      color: var(--text);
+      font-size: 14px;
+      line-height: 1.6;
+      margin-bottom: 16px;
+    }
+
+    .credits-name {
+      font-weight: 700;
+    }
+
+    .credits-close {
+      border: 1px solid #343434;
+      border-radius: 8px;
+      background: #161616;
+      color: #f2f2f2;
+      padding: 10px 14px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .credits-close:hover,
+    .credits-close:focus-visible {
+      background: #202020;
+      outline: none;
+    }
+
+    .top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 18px 20px 10px;
+    }
+
+    .brand {
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    .brand-dev {
+      display: none;
+      position: relative;
+      margin-left: 10px;
+      padding: 4px 10px;
+      border-radius: 6px;
+      background: linear-gradient(180deg, #8dff8d 0%, #36d836 100%);
+      color: #050505;
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: 0.2em;
+      vertical-align: middle;
+      overflow: hidden;
+      isolation: isolate;
+      text-shadow: none;
+    }
+
+    .brand.dev-mode .brand-dev {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .brand-dev-label {
+      position: relative;
+      z-index: 2;
+    }
+
+    .brand-dev-rain {
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+      z-index: 1;
+      opacity: 0.9;
+    }
+
+    .brand-dev-rain span {
+      position: absolute;
+      top: -24px;
+      color: rgba(8, 32, 8, 0.65);
+      font-family: "Courier New", monospace;
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      animation: matrix-fall linear infinite;
+      user-select: none;
+    }
+
+    .brand-dev-rain span:nth-child(1) { left: 8%; animation-duration: 2.1s; animation-delay: -0.4s; }
+    .brand-dev-rain span:nth-child(2) { left: 22%; animation-duration: 1.8s; animation-delay: -1.2s; }
+    .brand-dev-rain span:nth-child(3) { left: 36%; animation-duration: 2.4s; animation-delay: -0.8s; }
+    .brand-dev-rain span:nth-child(4) { left: 50%; animation-duration: 1.9s; animation-delay: -1.6s; }
+    .brand-dev-rain span:nth-child(5) { left: 66%; animation-duration: 2.3s; animation-delay: -0.2s; }
+    .brand-dev-rain span:nth-child(6) { left: 80%; animation-duration: 1.7s; animation-delay: -1s; }
+
+    @keyframes matrix-fall {
+      0% {
+        transform: translateY(-22px);
+        opacity: 0;
+      }
+      20% {
+        opacity: 0.8;
+      }
+      100% {
+        transform: translateY(34px);
+        opacity: 0;
+      }
+    }
+
+    .meta {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .category-nav {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .category-arrow {
+      min-width: 34px;
+      height: 34px;
+      border: 1px solid #343434;
+      border-radius: 8px;
+      background: #141414;
+      color: #efefef;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .category-arrow:hover,
+    .category-arrow:focus-visible {
+      background: #202020;
+      outline: none;
+    }
+
+    .category-display {
+      min-width: 240px;
+      padding: 8px 14px;
+      border: 1px solid var(--line-2);
+      border-radius: 8px;
+      background: #101010;
+      color: #f2f2f2;
+      font-size: 13px;
+      font-weight: 700;
+      text-align: center;
+    }
+
+    .menu-chip {
+      padding: 8px 12px;
+      border-radius: 10px;
+      background: var(--chip);
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 600;
+      border: 1px solid #343434;
+      cursor: pointer;
+    }
+
+    .menu-chip:hover,
+    .menu-chip:focus-visible {
+      background: #181818;
+      color: #efefef;
+      outline: none;
+    }
+
+    .xr-button {
+      border: 1px solid #343434;
+      border-radius: 10px;
+      background: #151515;
+      color: #efefef;
+      padding: 8px 12px;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .xr-button:hover,
+    .xr-button:focus-visible {
+      background: #202020;
+      outline: none;
+    }
+
+    .laser-pointer {
+      position: fixed;
+      left: 0;
+      top: 0;
+      width: 140px;
+      height: 2px;
+      background: linear-gradient(90deg, rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0.14));
+      transform-origin: 0 50%;
+      transform: translate(-9999px, -9999px) rotate(0deg);
+      pointer-events: none;
+      z-index: 30;
+      opacity: 0;
+      transition: opacity 0.12s ease;
+    }
+
+    .laser-pointer::after {
+      content: "";
+      position: absolute;
+      right: -5px;
+      top: 50%;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #fff;
+      box-shadow: 0 0 14px rgba(255, 255, 255, 0.8);
+      transform: translateY(-50%);
+    }
+
+    .laser-dot {
+      position: fixed;
+      left: 0;
+      top: 0;
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(255, 255, 255, 0.95);
+      border-radius: 50%;
+      box-shadow: 0 0 16px rgba(255, 255, 255, 0.6);
+      transform: translate(-9999px, -9999px);
+      pointer-events: none;
+      z-index: 31;
+      opacity: 0;
+      transition: opacity 0.12s ease, transform 0.08s linear;
+    }
+
+    .controls {
+      display: grid;
+      gap: 18px;
+      padding: 0 20px 18px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .slider-row {
+      display: grid;
+      gap: 10px;
+    }
+
+    .slider-label {
+      font-size: 12px;
+      color: var(--text);
+    }
+
+    .slider-control {
+      width: 100%;
+      height: 18px;
+      background: transparent;
+      appearance: none;
+      cursor: pointer;
+    }
+
+    .slider-control::-webkit-slider-runnable-track {
+      height: 2px;
+      background: #222;
+    }
+
+    .slider-control::-webkit-slider-thumb {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #fff;
+      appearance: none;
+      margin-top: -6px;
+      border: 0;
+    }
+
+    .slider-control::-moz-range-track {
+      height: 2px;
+      background: #222;
+      border: 0;
+    }
+
+    .slider-control::-moz-range-progress {
+      height: 2px;
+      background: #fff;
+    }
+
+    .slider-control::-moz-range-thumb {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #fff;
+      border: 0;
+    }
+
+    .toggle-list {
+      display: grid;
+      gap: 10px;
+      padding-top: 2px;
+    }
+
+    .toggle-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .toggle-item input {
+      position: absolute;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .toggle-item label {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .box {
+      width: 14px;
+      height: 14px;
+      border: 2px solid #bfbfbf;
+      border-radius: 2px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.15s ease, border-color 0.15s ease;
+    }
+
+    .box::after {
+      content: "";
+      width: 7px;
+      height: 7px;
+      background: #fff;
+      transform: scale(0);
+      transition: transform 0.15s ease;
+    }
+
+    .toggle-item input:checked + label .box {
+      background: #efefef;
+      border-color: #efefef;
+    }
+
+    .toggle-item input:checked + label .box::after {
+      transform: scale(1);
+      background: #0a0a0a;
+    }
+
+    .button-layout {
+      display: grid;
+      grid-template-columns: 140px 1fr 140px;
+      gap: 16px;
+      padding: 18px 20px 20px;
+    }
+
+    .side-buttons,
+    .main-buttons {
+      display: grid;
+      gap: 12px;
+    }
+
+    .side-buttons {
+      align-content: start;
+    }
+
+    .side-panel {
+      min-height: 120px;
+      border: 1px solid var(--line-2);
+      border-radius: 6px;
+      background: var(--side-panel-bg);
+      color: var(--side-panel-text);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 14px;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .main-buttons {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .mod-button {
+      min-height: 54px;
+      border: 1px solid var(--line-2);
+      border-radius: 6px;
+      background: var(--button);
+      color: #efefef;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.01em;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 10px 12px;
+      transition: background 0.16s ease, transform 0.16s ease, border-color 0.16s ease;
+      text-decoration: none;
+      cursor: pointer;
+    }
+
+    body.vr-mode .mod-button {
+      min-height: 78px;
+      font-size: 16px;
+      border-radius: 12px;
+      padding: 16px;
+    }
+
+    body.vr-mode .slider-control {
+      height: 28px;
+    }
+
+    body.vr-mode .slider-control::-webkit-slider-thumb {
+      width: 22px;
+      height: 22px;
+      margin-top: -10px;
+    }
+
+    body.vr-mode .slider-control::-moz-range-thumb {
+      width: 22px;
+      height: 22px;
+    }
+
+    body.vr-mode .toggle-item,
+    body.vr-mode .slider-label,
+    body.vr-mode .brand,
+    body.vr-mode .meta,
+    body.vr-mode .menu-chip,
+    body.vr-mode .footer-pill {
+      font-size: 16px;
+    }
+
+    body.vr-mode .box {
+      width: 22px;
+      height: 22px;
+    }
+
+    .mod-button:hover,
+    .mod-button:focus-visible {
+      background: var(--button-hover);
+      border-color: #343434;
+      transform: translateY(-1px);
+      outline: none;
+    }
+
+    .mod-button.active {
+      background: #f1f1f1;
+      color: #080808;
+      border-color: #f1f1f1;
+    }
+
+    .mod-button.laser-hover,
+    .xr-button.laser-hover,
+    .toggle-item label.laser-hover {
+      background: #262626;
+      border-color: #5a5a5a;
+      box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.12), 0 0 16px rgba(255, 255, 255, 0.08);
+    }
+
+    .mod-button.filtered-out {
+      opacity: 0.28;
+    }
+
+    .footer-pill {
+      width: fit-content;
+      margin: 0 auto 18px;
+      padding: 9px 16px;
+      border-radius: 999px;
+      background: var(--footer-bg);
+      color: var(--footer-text);
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .footer-pill.live {
+      color: #f5f5f5;
+    }
+
+    .avatar {
+      position: absolute;
+      right: 22px;
+      bottom: 44px;
+      width: 70px;
+      height: 70px;
+      border-radius: 16px;
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.35);
+      opacity: 0.9;
+      overflow: hidden;
+    }
+
+    .avatar img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .settings-panel {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .theme-control {
+      display: grid;
+      gap: 8px;
+      padding: 12px;
+      border: 1px solid var(--line-2);
+      border-radius: 10px;
+      background: #101010;
+    }
+
+    .theme-control label {
+      font-size: 12px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .theme-control input[type="color"] {
+      width: 100%;
+      height: 44px;
+      border: 1px solid var(--line-2);
+      border-radius: 8px;
+      background: #0b0b0b;
+      cursor: pointer;
+    }
+
+    .settings-actions {
+      grid-column: 1 / -1;
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .settings-button {
+      min-height: 44px;
+      border: 1px solid var(--line-2);
+      border-radius: 8px;
+      background: var(--button);
+      color: var(--text);
+      padding: 10px 14px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .settings-button:hover,
+    .settings-button:focus-visible {
+      background: var(--button-hover);
+      outline: none;
+    }
+
+    .menu.rgb-mode {
+      box-shadow:
+        0 20px 60px rgba(0, 0, 0, 0.45),
+        0 0 24px color-mix(in srgb, var(--rgb-accent) 45%, transparent);
+      animation: rgb-cycle 4s linear infinite;
+    }
+
+    .menu.rgb-mode .brand,
+    .menu.rgb-mode .category-display,
+    .menu.rgb-mode .footer-pill.live {
+      color: var(--rgb-accent);
+    }
+
+    .menu.rgb-mode .menu-chip,
+    .menu.rgb-mode .category-arrow,
+    .menu.rgb-mode .xr-button,
+    .menu.rgb-mode .mod-button,
+    .menu.rgb-mode .settings-button,
+    .menu.rgb-mode .side-panel {
+      border-color: color-mix(in srgb, var(--rgb-accent) 45%, #343434);
+      box-shadow: 0 0 14px color-mix(in srgb, var(--rgb-accent) 18%, transparent);
+    }
+
+    @keyframes rgb-cycle {
+      0% { --rgb-accent: #ff4d4d; }
+      16% { --rgb-accent: #ff9a3c; }
+      33% { --rgb-accent: #ffe14d; }
+      50% { --rgb-accent: #46ff7b; }
+      66% { --rgb-accent: #4dd8ff; }
+      83% { --rgb-accent: #a84dff; }
+      100% { --rgb-accent: #ff4d8d; }
+    }
+
+    @media (max-width: 980px) {
+      .button-layout {
+        grid-template-columns: 1fr;
+      }
+
+      .side-buttons {
+        grid-template-columns: repeat(2, 1fr);
+        grid-template-rows: none;
+      }
+
+      .main-buttons {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 620px) {
+      body {
+        padding: 14px;
+      }
+
+      .top,
+      .controls,
+      .button-layout {
+        padding-left: 14px;
+        padding-right: 14px;
+      }
+
+      .main-buttons {
+        grid-template-columns: 1fr;
+      }
+
+      .settings-panel {
+        grid-template-columns: 1fr;
+      }
+
+      .avatar {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="stage">
+    <section class="menu" aria-label="Universal mod menu">
+      <div class="top">
+        <div>
+          <div class="brand" id="brand-title">plorishMenu<span class="brand-dev"><span class="brand-dev-rain" aria-hidden="true"><span>01</span><span>10</span><span>01</span><span>11</span><span>00</span><span>10</span></span><span class="brand-dev-label">(DEV)</span></span></div>
+          <div class="category-nav">
+            <button class="category-arrow" id="category-prev" type="button">&lt;</button>
+            <div class="category-display" id="category-display">Gorilla Tag (recommended)</div>
+            <button class="category-arrow" id="category-next" type="button">&gt;</button>
+          </div>
+          <div class="meta">universal mod panel</div>
+        </div>
+        <div style="display:flex; gap:10px; align-items:center;">
+          <button class="xr-button" id="xr-toggle" type="button">Enter VR Mode</button>
+          <button class="menu-chip" id="credits-toggle" type="button">CELEZ build</button>
+        </div>
+      </div>
+
+      <div class="controls">
+        <div class="slider-row">
+          <div class="slider-label" id="maxdistance-label">maxdistance: 15M</div>
+          <input class="slider-control" id="maxdistance" type="range" min="0" max="50" value="15" />
+        </div>
+        <div class="slider-row">
+          <div class="slider-label" id="grapple-label">grapple hold: 2</div>
+          <input class="slider-control" id="grapple" type="range" min="0" max="10" value="2" />
+        </div>
+        <div class="slider-row">
+          <div class="slider-label" id="prediction-label">prediction: 1</div>
+          <input class="slider-control" id="prediction" type="range" min="1" max="375" value="1" />
+        </div>
+
+        <div class="toggle-list">
+          <div class="toggle-item">
+            <input id="chromatic-toggle" type="checkbox" />
+            <label for="chromatic-toggle"><span class="box" aria-hidden="true"></span><span>disable chromatic aberration</span></label>
+          </div>
+          <div class="toggle-item">
+            <input id="guardian-toggle" type="checkbox" />
+            <label for="guardian-toggle"><span class="box" aria-hidden="true"></span><span>disable guardian</span></label>
+          </div>
+          <div class="toggle-item">
+            <input id="caps-toggle" type="checkbox" />
+            <label for="caps-toggle"><span class="box" aria-hidden="true"></span><span>UI title caps on</span></label>
+          </div>
+        </div>
+      </div>
+
+      <div class="button-layout">
+        <div class="side-buttons" aria-label="Left side buttons">
+          <div class="side-panel">Cycle categories with the arrows under plorishMenu.</div>
+        </div>
+
+        <div class="main-buttons" id="main-buttons" aria-label="Main mod buttons">
+        </div>
+
+        <div class="side-buttons" aria-label="Right side buttons">
+          <div class="side-panel">Current category loads its own mod set in the center panel.</div>
+        </div>
+      </div>
+
+      <div class="footer-pill live" id="footer-status">PlorishMenu ready . . . 0 active mods</div>
+      <div class="avatar" aria-hidden="true">
+        <img src="https://raw.githubusercontent.com/iiDk-the-actual/iis.Stupid.Menu/master/Resources/GitHub/byebye.gif" alt="" />
+      </div>
+      <div class="credits-overlay" id="credits-overlay">
+        <div class="credits-card">
+          <div class="credits-title">Credits</div>
+          <div class="credits-entry"><span class="credits-name">Celez8:</span> Made plorishMenu / debugging</div>
+          <button class="credits-close" id="credits-close" type="button">Close</button>
+        </div>
+      </div>
+      <div class="sequence-overlay" id="sequence-overlay">
+        <div class="sequence-card">
+          <div class="sequence-title">Authentication System</div>
+          <div class="sequence-steps">
+            <div class="sequence-step" data-sequence-step="1">1. Click Authenticatorz button</div>
+            <div class="sequence-step" data-sequence-step="2">2. Load into game</div>
+            <div class="sequence-step" data-sequence-step="3">3. Wait for it to detect</div>
+            <div class="sequence-step" data-sequence-step="4">4. Boom!</div>
+          </div>
+          <div class="sequence-status" id="sequence-status">Ready to begin authentication.</div>
+          <button class="sequence-button" id="sequence-start" type="button">Authenticatorz</button>
+        </div>
+      </div>
+      <div class="login-overlay" id="login-overlay">
+        <div class="login-card">
+          <div class="login-title">Developer Login</div>
+          <div class="login-copy">Dev key accepted. Sign in with a developer account to continue.</div>
+          <form class="login-form" id="login-form">
+            <input class="login-input" id="login-username" type="text" placeholder="Username" autocomplete="off" />
+            <input class="login-input" id="login-password" type="password" placeholder="Password" autocomplete="off" />
+            <div class="login-actions">
+              <button class="login-button" type="submit">Login</button>
+              <div class="login-status" id="login-status">Waiting for login</div>
+            </div>
+          </form>
+        </div>
+      </div>
+      <div class="auth-overlay" id="auth-overlay">
+        <div class="auth-card">
+          <div class="auth-title">Key System</div>
+          <div class="auth-copy">Enter a valid key to unlock the menu categories and controls.</div>
+          <form class="auth-form" id="auth-form">
+            <input class="auth-input" id="auth-input" type="password" placeholder="Enter key" autocomplete="off" />
+            <div class="auth-actions">
+              <button class="auth-button" type="submit">Unlock Menu</button>
+              <div class="auth-status" id="auth-status">Menu locked</div>
+            </div>
+          </form>
+        </div>
+      </div>
+    </section>
+  </div>
+  <div class="laser-pointer" id="laser-pointer" aria-hidden="true"></div>
+  <div class="laser-dot" id="laser-dot" aria-hidden="true"></div>
+  <script>
+    const menu = document.querySelector('.menu');
+    const chip = document.querySelector('.menu-chip');
+    const brandTitle = document.getElementById('brand-title');
+    const creditsToggle = document.getElementById('credits-toggle');
+    const creditsOverlay = document.getElementById('credits-overlay');
+    const creditsClose = document.getElementById('credits-close');
+    const sequenceOverlay = document.getElementById('sequence-overlay');
+    const sequenceStart = document.getElementById('sequence-start');
+    const sequenceStatus = document.getElementById('sequence-status');
+    const sequenceSteps = Array.from(document.querySelectorAll('[data-sequence-step]'));
+    const loginOverlay = document.getElementById('login-overlay');
+    const loginForm = document.getElementById('login-form');
+    const loginUsername = document.getElementById('login-username');
+    const loginPassword = document.getElementById('login-password');
+    const loginStatus = document.getElementById('login-status');
+    const categoryPrev = document.getElementById('category-prev');
+    const categoryNext = document.getElementById('category-next');
+    const categoryDisplay = document.getElementById('category-display');
+    const xrToggle = document.getElementById('xr-toggle');
+    const footerStatus = document.getElementById('footer-status');
+    const laserPointer = document.getElementById('laser-pointer');
+    const laserDot = document.getElementById('laser-dot');
+    const authOverlay = document.getElementById('auth-overlay');
+    const authForm = document.getElementById('auth-form');
+    const authInput = document.getElementById('auth-input');
+    const authStatus = document.getElementById('auth-status');
+    const maxDistance = document.getElementById('maxdistance');
+    const grappleHold = document.getElementById('grapple');
+    const prediction = document.getElementById('prediction');
+    const maxDistanceLabel = document.getElementById('maxdistance-label');
+    const grappleLabel = document.getElementById('grapple-label');
+    const predictionLabel = document.getElementById('prediction-label');
+    const chromaticToggle = document.getElementById('chromatic-toggle');
+    const guardianToggle = document.getElementById('guardian-toggle');
+    const capsToggle = document.getElementById('caps-toggle');
+    const mainButtonsContainer = document.getElementById('main-buttons');
+    const categoryOrder = ['gorilla-tag', 'animal-company', 'grab', 'ug', 'settings'];
+
+    const categories = {
+      'gorilla-tag': {
+        label: 'Gorilla Tag (recommended)',
+        mods: [
+          { label: '120hz refresh rate', refreshRate: 120 },
+          { label: '90hz refresh rate', refreshRate: 90 },
+          { label: '30hz refresh rate', refreshRate: 30 },
+          { label: '75hz refresh rate', refreshRate: 75 },
+          { label: '60hz refresh rate', refreshRate: 60 },
+          { label: '36hz refresh rate', refreshRate: 36 },
+          { label: '45hz refresh rate', refreshRate: 45 },
+          'Quest UI',
+          'Disable Blur',
+          'Rig Gun',
+          'Platform Aura',
+          'Wall Walk',
+          'Ghost Mode',
+          'ESP',
+          'Join Random',
+          'Soundboard (Coming soon)',
+          'Name Changer',
+          'RPC Spam',
+          'Anti Report',
+          'Cosmetic Gun',
+          'Bouncy House'
+        ]
+      },
+      'animal-company': {
+        label: 'AnImal Company',
+        mods: [
+          'Unlock Dev Panel'
+        ]
+      },
+      'grab': {
+        label: 'GRAB (?)',
+        mods: [
+          'Unlock ALL',
+          'Unlock Staff',
+          'Unlock Dev Hat',
+          'Unlock Editor',
+          'Get 99999999 Grab Coins (maximum)'
+        ]
+      },
+      'ug': {
+        label: 'UG',
+        mods: [
+          'Spawn Random Egg',
+          'Spawn Egg Gun',
+          'Add Random Dino',
+          'Steal Dino Gun',
+          'INF bones',
+          'INF nugs'
+        ]
+      },
+      'settings': {
+        label: 'Settings',
+        mods: []
+      }
+    };
+
+    const themeDefaults = {
+      '--panel': '#030303',
+      '--panel-soft': '#090909',
+      '--line': '#151515',
+      '--line-2': '#242424',
+      '--text': '#f3f3f3',
+      '--muted': '#b5b5b5',
+      '--chip': '#101010',
+      '--button': '#151515',
+      '--button-hover': '#1d1d1d',
+      '--side-panel-bg': '#101010',
+      '--side-panel-text': '#b5b5b5',
+      '--footer-bg': '#1b1b1b',
+      '--footer-text': '#f5f5f5'
+    };
+
+    let selectedCategory = 'gorilla-tag';
+    let xrSession = null;
+    let lastLaserTarget = null;
+    let isUnlocked = false;
+    let isDevBuild = false;
+    let pendingDevLogin = false;
+    let audioReady = false;
+    let rgbModeEnabled = false;
+    let currentRefreshRate = 60;
+    let lastRenderTick = 0;
+    let scanlineProgress = 0;
+    let sequenceTimer = null;
+    let sequenceHideTimer = null;
+
+    const validKeys = new Set([
+      'celezzzzzmods',
+      'plorishmoddeng',
+      'ploriiiiiish',
+      'plorinsh'
+    ]);
+    const devKey = 'plorishdevaccess';
+    const devAccounts = new Map([
+      ['zenb', 'celezplorish'],
+      ['willow', 'celezplorishh'],
+      ['celez8', 'celezthetuff8']
+    ]);
+
+    function getModButtons() {
+      return Array.from(document.querySelectorAll('.main-buttons .mod-button'));
+    }
+
+    function updateMetaText() {
+      document.querySelector('.meta').textContent = 'universal mod panel . ' + currentRefreshRate + 'hz ui render';
+    }
+
+    const audioContext = window.AudioContext ? new AudioContext() : null;
+
+    function ensureAudio() {
+      if (!audioContext) {
+        return;
+      }
+      if (audioContext.state === 'suspended') {
+        audioContext.resume();
+      }
+      audioReady = true;
+    }
+
+    function playUiSound(type) {
+      if (!audioContext || !audioReady) {
+        return;
+      }
+
+      const now = audioContext.currentTime;
+      const gain = audioContext.createGain();
+      const oscA = audioContext.createOscillator();
+      const oscB = audioContext.createOscillator();
+      const filter = audioContext.createBiquadFilter();
+
+      oscA.connect(filter);
+      oscB.connect(filter);
+      filter.connect(gain);
+      gain.connect(audioContext.destination);
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(2400, now);
+
+      if (type === 'success') {
+        oscA.type = 'sine';
+        oscB.type = 'triangle';
+        oscA.frequency.setValueAtTime(820, now);
+        oscA.frequency.exponentialRampToValueAtTime(1260, now + 0.12);
+        oscB.frequency.setValueAtTime(620, now);
+        oscB.frequency.exponentialRampToValueAtTime(930, now + 0.12);
+        gain.gain.setValueAtTime(0.0001, now);
+        gain.gain.exponentialRampToValueAtTime(0.05, now + 0.01);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.18);
+      } else if (type === 'error') {
+        oscA.type = 'sawtooth';
+        oscB.type = 'square';
+        oscA.frequency.setValueAtTime(300, now);
+        oscA.frequency.exponentialRampToValueAtTime(210, now + 0.14);
+        oscB.frequency.setValueAtTime(220, now);
+        oscB.frequency.exponentialRampToValueAtTime(160, now + 0.14);
+        gain.gain.setValueAtTime(0.0001, now);
+        gain.gain.exponentialRampToValueAtTime(0.038, now + 0.01);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.16);
+      } else if (type === 'slider') {
+        oscA.type = 'sine';
+        oscB.type = 'sine';
+        oscA.frequency.setValueAtTime(560, now);
+        oscA.frequency.exponentialRampToValueAtTime(640, now + 0.06);
+        oscB.frequency.setValueAtTime(810, now);
+        oscB.frequency.exponentialRampToValueAtTime(760, now + 0.06);
+        gain.gain.setValueAtTime(0.0001, now);
+        gain.gain.exponentialRampToValueAtTime(0.018, now + 0.005);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.08);
+      } else {
+        oscA.type = 'triangle';
+        oscB.type = 'sine';
+        oscA.frequency.setValueAtTime(720, now);
+        oscA.frequency.exponentialRampToValueAtTime(910, now + 0.08);
+        oscB.frequency.setValueAtTime(480, now);
+        oscB.frequency.exponentialRampToValueAtTime(620, now + 0.08);
+        gain.gain.setValueAtTime(0.0001, now);
+        gain.gain.exponentialRampToValueAtTime(0.028, now + 0.005);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.11);
+      }
+
+      oscA.start(now);
+      oscB.start(now);
+      oscA.stop(now + 0.22);
+      oscB.stop(now + 0.22);
+    }
+
+    function updateFooter(message) {
+      const activeCount = getModButtons().filter((button) => button.classList.contains('active')).length;
+      footerStatus.textContent = message || (categories[selectedCategory].label + ' loaded . . . ' + activeCount + ' active mods');
+    }
+
+    function setVrMode(enabled) {
+      document.body.classList.toggle('vr-mode', enabled);
+      xrToggle.textContent = enabled ? 'Exit VR Mode' : 'Enter VR Mode';
+      laserPointer.style.opacity = enabled ? '1' : '0';
+      laserDot.style.opacity = enabled ? '1' : '0';
+      playUiSound('click');
+      updateFooter(enabled ? 'VR-friendly layout enabled' : '');
+    }
+
+    function clearLaserHover() {
+      if (lastLaserTarget) {
+        lastLaserTarget.classList.remove('laser-hover');
+        lastLaserTarget = null;
+      }
+    }
+
+    function setLaserTarget(target) {
+      clearLaserHover();
+      if (target) {
+        target.classList.add('laser-hover');
+        lastLaserTarget = target;
+      }
+    }
+
+    function updateLaser(x, y) {
+      if (!document.body.classList.contains('vr-mode')) {
+        return;
+      }
+
+      const originX = 42;
+      const originY = window.innerHeight - 42;
+      const deltaX = x - originX;
+      const deltaY = y - originY;
+      const angle = Math.atan2(deltaY, deltaX) * (180 / Math.PI);
+      const length = Math.hypot(deltaX, deltaY);
+
+      laserPointer.style.transform = 'translate(' + originX + 'px, ' + originY + 'px) rotate(' + angle + 'deg) scaleX(' + (length / 140) + ')';
+      laserDot.style.transform = 'translate(' + (x - 8) + 'px, ' + (y - 8) + 'px)';
+
+      const target = document.elementFromPoint(x, y);
+      const interactiveTarget = target ? target.closest('.mod-button, .xr-button, .toggle-item label, .slider-control') : null;
+      setLaserTarget(interactiveTarget);
+    }
+
+    function activateLaserTarget() {
+      if (lastLaserTarget) {
+        lastLaserTarget.click();
+      }
+    }
+
+    function setLockedState(locked) {
+      authOverlay.classList.toggle('hidden', !locked);
+      menu.querySelectorAll('.main-buttons .mod-button, .controls input, #xr-toggle, #category-prev, #category-next').forEach((element) => {
+        element.disabled = locked;
+      });
+    }
+
+    function setLoginState(visible) {
+      loginOverlay.classList.toggle('visible', visible);
+      pendingDevLogin = visible;
+    }
+
+    function setSequenceStep(stepNumber, statusText) {
+      sequenceSteps.forEach((step) => {
+        step.classList.toggle('active', Number(step.dataset.sequenceStep) === stepNumber);
+      });
+      if (statusText) {
+        sequenceStatus.textContent = statusText;
+      }
+    }
+
+    function showSequenceOverlay() {
+      clearTimeout(sequenceTimer);
+      clearTimeout(sequenceHideTimer);
+      sequenceOverlay.classList.add('visible');
+      sequenceOverlay.classList.remove('hidden');
+      sequenceStart.disabled = false;
+      sequenceStatus.textContent = 'Ready to begin authentication.';
+      setSequenceStep(1);
+    }
+
+    function runSequence() {
+      sequenceStart.disabled = true;
+      setSequenceStep(1, 'Authenticatorz pressed.');
+      playUiSound('click');
+
+      clearTimeout(sequenceTimer);
+      clearTimeout(sequenceHideTimer);
+
+      sequenceTimer = setTimeout(() => {
+        setSequenceStep(2, 'Load into game.');
+        playUiSound('click');
+      }, 4000);
+
+      sequenceHideTimer = setTimeout(() => {
+        setSequenceStep(3, 'Waiting for it to detect...');
+        playUiSound('slider');
+      }, 11000);
+
+      setTimeout(() => {
+        setSequenceStep(4, 'Boom!');
+        playUiSound('success');
+      }, 18000);
+
+      setTimeout(() => {
+        sequenceOverlay.classList.add('hidden');
+        sequenceOverlay.classList.remove('visible');
+        updateFooter('Authentication sequence finished');
+      }, 23000);
+    }
+
+    function applyDevBuild(enabled) {
+      isDevBuild = enabled;
+      brandTitle.classList.toggle('dev-mode', enabled);
+      chip.textContent = enabled ? 'DEV BUILD' : 'key accepted';
+      if (enabled) {
+        menu.style.setProperty('--panel-hue', '8deg');
+      }
+    }
+
+    function unlockMenu(key, devMode) {
+      isUnlocked = true;
+      setLockedState(false);
+      setLoginState(false);
+      applyDevBuild(Boolean(devMode));
+      authStatus.textContent = devMode ? 'Unlocked with dev key' : 'Unlocked with ' + key;
+      authStatus.classList.remove('error');
+      playUiSound('success');
+      showSequenceOverlay();
+      updateFooter(devMode ? 'Access granted . . . dev build enabled' : 'Access granted . . . menu unlocked');
+    }
+
+    function updateSliderFill(input) {
+      const min = Number(input.min || 0);
+      const max = Number(input.max || 100);
+      const value = Number(input.value);
+      const percent = ((value - min) / (max - min)) * 100;
+      input.style.background = 'linear-gradient(to right, #f1f1f1 0%, #f1f1f1 ' + percent + '%, #222 ' + percent + '%, #222 100%)';
+    }
+
+    function updateLabels() {
+      maxDistanceLabel.textContent = 'maxdistance: ' + maxDistance.value + 'M';
+      grappleLabel.textContent = 'grapple hold: ' + grappleHold.value;
+      predictionLabel.textContent = 'prediction: ' + prediction.value;
+    }
+
+    function applyToggles() {
+      menu.style.setProperty('--panel-hue', chromaticToggle.checked ? '0deg' : '18deg');
+      menu.style.setProperty('--panel-blur', chromaticToggle.checked ? '0px' : '0.35px');
+      menu.style.setProperty('--guard-opacity', guardianToggle.checked ? '0' : '1');
+
+      const nextTransform = capsToggle.checked ? 'uppercase' : 'none';
+      document.querySelectorAll('.brand, .menu-chip, .mod-button, .footer-pill').forEach((element) => {
+        element.style.textTransform = nextTransform;
+      });
+    }
+
+    function bindModButtons() {
+      getModButtons().forEach((button) => {
+        button.addEventListener('click', () => {
+          if (button.dataset.refreshRate) {
+            currentRefreshRate = Number(button.dataset.refreshRate);
+            getModButtons()
+              .filter((candidate) => candidate.dataset.refreshRate)
+              .forEach((candidate) => candidate.classList.toggle('active', candidate === button));
+            chip.textContent = currentRefreshRate + 'hz selected';
+            updateMetaText();
+            playUiSound('click');
+            updateFooter('UI refresh rate set to ' + currentRefreshRate + 'hz');
+            return;
+          }
+
+          button.classList.toggle('active');
+          chip.textContent = button.textContent.trim();
+          updateFooter(button.textContent.trim() + (button.classList.contains('active') ? ' enabled' : ' disabled'));
+        });
+      });
+    }
+
+    function bindThemeControls() {
+      document.querySelectorAll('[data-theme-var]').forEach((input) => {
+        input.addEventListener('input', () => {
+          menu.style.setProperty(input.dataset.themeVar, input.value);
+          chip.textContent = 'theme updated';
+          playUiSound('slider');
+          updateFooter(input.dataset.themeVar + ' changed');
+        });
+      });
+
+      const resetButton = document.getElementById('reset-theme');
+      if (resetButton) {
+        resetButton.addEventListener('click', () => {
+          Object.entries(themeDefaults).forEach(([key, value]) => {
+            menu.style.setProperty(key, value);
+            const input = document.querySelector('[data-theme-var="' + key + '"]');
+            if (input) {
+              input.value = value;
+            }
+          });
+          playUiSound('click');
+          updateFooter('Theme reset to defaults');
+        });
+      }
+
+      const rgbButton = document.getElementById('toggle-rgb');
+      if (rgbButton) {
+        rgbButton.addEventListener('click', () => {
+          rgbModeEnabled = !rgbModeEnabled;
+          menu.classList.toggle('rgb-mode', rgbModeEnabled);
+          rgbButton.textContent = rgbModeEnabled ? 'Disable RGB' : 'Enable RGB';
+          playUiSound('click');
+          updateFooter(rgbModeEnabled ? 'RGB mode enabled' : 'RGB mode disabled');
+        });
+      }
+    }
+
+    function renderSettingsPage() {
+      mainButtonsContainer.innerHTML = `
+        <div class="settings-panel">
+          <div class="theme-control"><label for="theme-panel">Panel</label><input id="theme-panel" type="color" data-theme-var="--panel" value="#030303"></div>
+          <div class="theme-control"><label for="theme-panel-soft">Panel Soft</label><input id="theme-panel-soft" type="color" data-theme-var="--panel-soft" value="#090909"></div>
+          <div class="theme-control"><label for="theme-line">Line</label><input id="theme-line" type="color" data-theme-var="--line" value="#151515"></div>
+          <div class="theme-control"><label for="theme-line-2">Line 2</label><input id="theme-line-2" type="color" data-theme-var="--line-2" value="#242424"></div>
+          <div class="theme-control"><label for="theme-text">Text</label><input id="theme-text" type="color" data-theme-var="--text" value="#f3f3f3"></div>
+          <div class="theme-control"><label for="theme-muted">Muted Text</label><input id="theme-muted" type="color" data-theme-var="--muted" value="#b5b5b5"></div>
+          <div class="theme-control"><label for="theme-chip">Build Button</label><input id="theme-chip" type="color" data-theme-var="--chip" value="#101010"></div>
+          <div class="theme-control"><label for="theme-button">Button</label><input id="theme-button" type="color" data-theme-var="--button" value="#151515"></div>
+          <div class="theme-control"><label for="theme-button-hover">Button Hover</label><input id="theme-button-hover" type="color" data-theme-var="--button-hover" value="#1d1d1d"></div>
+          <div class="theme-control"><label for="theme-side-panel-bg">Side Panel</label><input id="theme-side-panel-bg" type="color" data-theme-var="--side-panel-bg" value="#101010"></div>
+          <div class="theme-control"><label for="theme-side-panel-text">Side Panel Text</label><input id="theme-side-panel-text" type="color" data-theme-var="--side-panel-text" value="#b5b5b5"></div>
+          <div class="theme-control"><label for="theme-footer-bg">Footer</label><input id="theme-footer-bg" type="color" data-theme-var="--footer-bg" value="#1b1b1b"></div>
+          <div class="theme-control"><label for="theme-footer-text">Footer Text</label><input id="theme-footer-text" type="color" data-theme-var="--footer-text" value="#f5f5f5"></div>
+          <div class="settings-actions">
+            <button class="settings-button" id="toggle-rgb" type="button">Enable RGB</button>
+            <button class="settings-button" id="reset-theme" type="button">Reset Theme</button>
+          </div>
+        </div>
+      `;
+      bindThemeControls();
+    }
+
+    function renderCategory(categoryKey) {
+      selectedCategory = categoryKey;
+
+      if (categoryKey === 'settings') {
+        renderSettingsPage();
+      } else {
+        mainButtonsContainer.innerHTML = categories[categoryKey].mods
+          .map((mod) => {
+            if (typeof mod === 'string') {
+              return '<button class="mod-button" type="button">' + mod + '</button>';
+            }
+            return '<button class="mod-button' + (mod.refreshRate === currentRefreshRate ? ' active' : '') + '" data-refresh-rate="' + mod.refreshRate + '" type="button">' + mod.label + '</button>';
+          })
+          .join('');
+        bindModButtons();
+      }
+
+      applyToggles();
+      chip.textContent = categories[categoryKey].label;
+      categoryDisplay.textContent = categories[categoryKey].label;
+      playUiSound('click');
+      updateFooter(categories[categoryKey].label + ' loaded');
+    }
+
+    function stepCategory(direction) {
+      const currentIndex = categoryOrder.indexOf(selectedCategory);
+      const nextIndex = (currentIndex + direction + categoryOrder.length) % categoryOrder.length;
+      renderCategory(categoryOrder[nextIndex]);
+    }
+
+    function renderLoop(timestamp) {
+      const interval = 1000 / Math.max(currentRefreshRate, 1);
+      if (timestamp - lastRenderTick >= interval) {
+        lastRenderTick = timestamp;
+        scanlineProgress += 6;
+        const scanlineY = 12 + (scanlineProgress % Math.max(menu.offsetHeight - 24, 1));
+        menu.style.setProperty('--scanline-y', scanlineY + 'px');
+      }
+      requestAnimationFrame(renderLoop);
+    }
+
+    maxDistance.addEventListener('input', () => {
+      if (!isUnlocked) {
+        return;
+      }
+      updateSliderFill(maxDistance);
+      updateLabels();
+      chip.textContent = 'distance ' + maxDistance.value + 'M';
+      playUiSound('slider');
+      updateFooter('maxdistance set to ' + maxDistance.value + 'M');
+    });
+
+    grappleHold.addEventListener('input', () => {
+      if (!isUnlocked) {
+        return;
+      }
+      updateSliderFill(grappleHold);
+      updateLabels();
+      chip.textContent = 'grapple ' + grappleHold.value;
+      playUiSound('slider');
+      updateFooter('grapple hold set to ' + grappleHold.value);
+    });
+
+    prediction.addEventListener('input', () => {
+      if (!isUnlocked) {
+        return;
+      }
+      updateSliderFill(prediction);
+      updateLabels();
+      chip.textContent = 'prediction ' + prediction.value;
+      playUiSound('slider');
+      updateFooter('prediction set to ' + prediction.value);
+    });
+
+    [chromaticToggle, guardianToggle, capsToggle].forEach((toggle) => {
+      toggle.addEventListener('change', () => {
+        if (!isUnlocked) {
+          return;
+        }
+        applyToggles();
+        playUiSound('click');
+        updateFooter(toggle.nextElementSibling.textContent + (toggle.checked ? ' enabled' : ' disabled'));
+      });
+    });
+
+    categoryPrev.addEventListener('click', () => {
+      if (!isUnlocked) {
+        return;
+      }
+      ensureAudio();
+      stepCategory(-1);
+    });
+
+    categoryNext.addEventListener('click', () => {
+      if (!isUnlocked) {
+        return;
+      }
+      ensureAudio();
+      stepCategory(1);
+    });
+
+    xrToggle.addEventListener('click', async () => {
+      if (!isUnlocked) {
+        return;
+      }
+      if (xrSession) {
+        await xrSession.end();
+        xrSession = null;
+        setVrMode(false);
+        return;
+      }
+
+      if (navigator.xr) {
+        try {
+          const supported = await navigator.xr.isSessionSupported('immersive-vr');
+          if (supported) {
+            xrSession = await navigator.xr.requestSession('immersive-vr');
+            xrSession.addEventListener('end', () => {
+              xrSession = null;
+              setVrMode(false);
+            });
+            setVrMode(true);
+            return;
+          }
+        } catch (error) {
+          // Fall back to the large VR-friendly layout below.
+        }
+      }
+
+      setVrMode(!document.body.classList.contains('vr-mode'));
+    });
+
+    window.addEventListener('pointermove', (event) => {
+      updateLaser(event.clientX, event.clientY);
+    });
+
+    window.addEventListener('pointerdown', () => {
+      if (!isUnlocked) {
+        return;
+      }
+      activateLaserTarget();
+    });
+
+    window.addEventListener('keydown', (event) => {
+      if (!document.body.classList.contains('vr-mode')) {
+        return;
+      }
+      if (!isUnlocked) {
+        return;
+      }
+
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        activateLaserTarget();
+      }
+    });
+
+    authForm.addEventListener('submit', (event) => {
+      event.preventDefault();
+      ensureAudio();
+      const key = authInput.value.trim();
+      const normalizedKey = key.toLowerCase();
+      if (normalizedKey === devKey) {
+        authOverlay.classList.add('hidden');
+        setLoginState(true);
+        authStatus.textContent = 'Dev key accepted';
+        authStatus.classList.remove('error');
+        chip.textContent = 'dev auth';
+        playUiSound('success');
+        updateFooter('Dev key accepted . . . login required');
+        return;
+      }
+      if (validKeys.has(normalizedKey)) {
+        unlockMenu(key, false);
+        return;
+      }
+
+      authStatus.textContent = 'Invalid key';
+      authStatus.classList.add('error');
+      chip.textContent = 'access denied';
+      playUiSound('error');
+      updateFooter('Access denied . . . invalid key');
+    });
+
+    loginForm.addEventListener('submit', (event) => {
+      event.preventDefault();
+      ensureAudio();
+      const username = loginUsername.value.trim().toLowerCase();
+      const password = loginPassword.value.trim().toLowerCase();
+      const expectedPassword = devAccounts.get(username);
+
+      if (expectedPassword && expectedPassword === password) {
+        loginStatus.textContent = 'Developer login accepted';
+        loginStatus.classList.remove('error');
+        unlockMenu(username, true);
+        return;
+      }
+
+      loginStatus.textContent = 'Invalid developer login';
+      loginStatus.classList.add('error');
+      chip.textContent = 'dev login failed';
+      playUiSound('error');
+      updateFooter('Developer login failed');
+    });
+
+    document.addEventListener('pointerleave', () => {
+      clearLaserHover();
+    });
+
+    creditsToggle.addEventListener('click', () => {
+      ensureAudio();
+      playUiSound('click');
+      creditsOverlay.classList.add('visible');
+    });
+
+    creditsClose.addEventListener('click', () => {
+      playUiSound('click');
+      creditsOverlay.classList.remove('visible');
+    });
+
+    creditsOverlay.addEventListener('click', (event) => {
+      if (event.target === creditsOverlay) {
+        playUiSound('click');
+        creditsOverlay.classList.remove('visible');
+      }
+    });
+
+    sequenceStart.addEventListener('click', () => {
+      ensureAudio();
+      runSequence();
+    });
+
+    loginOverlay.addEventListener('click', (event) => {
+      if (event.target === loginOverlay && !isUnlocked && pendingDevLogin) {
+        loginStatus.textContent = 'Waiting for login';
+        loginStatus.classList.remove('error');
+      }
+    });
+
+    updateSliderFill(maxDistance);
+    updateSliderFill(grappleHold);
+    updateSliderFill(prediction);
+    updateLabels();
+    renderCategory(selectedCategory);
+    applyToggles();
+    updateMetaText();
+    setLockedState(true);
+    updateFooter();
+    requestAnimationFrame(renderLoop);
+  </script>
+</body>
+</html>
